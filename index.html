@@ -3,103 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown to PDF Tool</title>
+    <title>Professional MD to PDF (Paged.js)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+
     <style>
-        :root { --primary: #2ea44f; --bg: #f6f8fa; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
-        
-        /* Header & Controls */
-        header { background: #24292f; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        h1 { margin: 0; font-size: 1.2rem; }
-        button { background-color: var(--primary); color: white; border: 1px solid rgba(27,31,36,0.15); border-radius: 6px; padding: 6px 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        button:hover { background-color: #2c974b; }
+        /* UI STYLES (Hidden during print) */
+        @media screen {
+            :root { --sidebar-width: 400px; }
+            body { margin: 0; display: flex; height: 100vh; font-family: sans-serif; background: #2c3e50; }
+            #editor-container { width: var(--sidebar-width); display: flex; flex-direction: column; background: #1e1e1e; color: white; padding: 15px; z-index: 10; }
+            textarea { flex: 1; background: #252526; color: #d4d4d4; border: 1px solid #333; padding: 10px; font-family: monospace; resize: none; margin-top: 10px; }
+            button { background: #007acc; color: white; border: none; padding: 10px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+            button:hover { background: #005f9e; }
+            #render-area { flex: 1; overflow-y: auto; background: #525659; display: flex; justify-content: center; padding: 20px; }
+            /* This mimics the paper in preview */
+            .pagedjs_page { background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        }
 
-        /* Main Layout */
-        main { display: flex; flex: 1; overflow: hidden; gap: 10px; padding: 10px; }
-        .pane { flex: 1; display: flex; flex-direction: column; background: white; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
-        .label { padding: 8px 12px; background: #f6f8fa; border-bottom: 1px solid #d0d7de; font-size: 12px; font-weight: 600; color: #57606a; }
-        
-        textarea { flex: 1; border: none; padding: 15px; font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 14px; outline: none; resize: none; }
-        
-        /* The Preview (This is what gets turned into PDF) */
-        #preview { flex: 1; padding: 30px; overflow-y: auto; line-height: 1.6; color: #24292f; }
-        #preview h1 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
-        #preview code { background: rgba(175,184,193,0.2); padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; }
-        #preview pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
-        #preview blockquote { border-left: .25em solid #d0d7de; color: #57606a; padding: 0 1em; margin: 0; }
-        #preview img { max-width: 100%; }
+        /* PAGED.JS / PRINT STYLES */
+        @page {
+            size: letter;
+            margin: 20mm;
 
-        @media (max-width: 768px) { main { flex-direction: column; } }
+            /* Page Numbers (Bottom Right) */
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                font-family: serif;
+            }
+            /* Running Header */
+            @top-center {
+                content: "Generated Document";
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+
+        /* Markdown Typography */
+        #content { font-family: "Georgia", serif; line-height: 1.6; color: #111; }
+        h1 { font-size: 28pt; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; color: #2c3e50; }
+        h2 { font-size: 20pt; margin-top: 30px; page-break-after: avoid; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; white-space: pre-wrap; }
+        blockquote { font-style: italic; border-left: 5px solid #ccc; margin-left: 0; padding-left: 20px; }
+        
+        /* Force page break on specific elements */
+        .page-break { break-before: page; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>Markdown PDF Studio</h1>
-    <button onclick="downloadPDF()">Export to PDF</button>
-</header>
-
-<main>
-    <div class="pane">
-        <div class="label">MARKDOWN INPUT</div>
-        <textarea id="editor" placeholder="Type your markdown here..." oninput="updatePreview()"># My Document
-        
-This is a **bold** statement.
+<div id="editor-container">
+    <h2>MD Editor</h2>
+    <p style="font-size: 0.8rem; color: #aaa;">Type below, then click Preview to layout.</p>
+    <button onclick="renderPaged()">1. Update Preview</button>
+    <button onclick="window.print()" style="background: #28a745;">2. Save as PDF</button>
+    <textarea id="md-input"># Project Report
+This document uses **Paged.js** for professional PDF layout.
 
 ## Features
-- Fast conversion
-- Browser-based
-- Github styling</textarea>
-    </div>
+- Automatic Page Numbering
+- Running Headers
+- Proper Typography
+- High Resolution (Vector text)
 
-    <div class="pane">
-        <div class="label">LIVE PREVIEW</div>
-        <div id="preview"></div>
-    </div>
-</main>
+> "The best way to predict the future is to invent it."
+
+<div class="page-break"></div>
+
+## Page 2 content
+Because we added a `page-break` div, this starts on a fresh sheet of paper!
+    </textarea>
+</div>
+
+<div id="render-area">
+    <div id="content">
+        </div>
+</div>
 
 <script>
-    const editor = document.getElementById('editor');
-    const preview = document.getElementById('preview');
+    const input = document.getElementById('md-input');
+    const content = document.getElementById('content');
 
-    // Update HTML on every keystroke
-    function updatePreview() {
-        const rawValue = editor.value;
-        preview.innerHTML = marked.parse(rawValue);
-    }
+    async function renderPaged() {
+        // 1. Convert MD to HTML
+        const html = marked.parse(input.value);
+        content.innerHTML = html;
 
-    async function downloadPDF() {
-        const element = document.getElementById('preview');
+        // 2. Trigger Paged.js to re-paginate the content
+        // We remove existing pagedjs elements first to allow re-renders
+        const existingPages = document.querySelectorAll('.pagedjs_pages');
+        existingPages.forEach(el => el.remove());
+
+        const paged = new Paged.Polyfill();
+        await paged.preview(content, ["style.css"], document.body);
         
-        if (!editor.value.trim()) {
-            alert("The document is empty!");
-            return;
-        }
-
-        // Configuration
-        const opt = {
-            margin:       [0.5, 0.5], // Top/Bottom, Left/Right (inches)
-            filename:     'document.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-
-        // Execution
-        try {
-            await html2pdf().set(opt).from(element).save();
-        } catch (err) {
-            console.error(err);
-            alert("Error generating PDF. Check console.");
-        }
+        // Move the generated pages into our render-area for viewing
+        const pages = document.querySelector('.pagedjs_pages');
+        document.getElementById('render-area').appendChild(pages);
     }
 
-    // Initialize on load
-    updatePreview();
+    // Initial Render
+    window.onload = renderPaged;
 </script>
 
 </body>
