@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD 2 PDF Converter</title>
+    
+    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        /* Professional PDF Styling */
+        @page {
+            size: A4;
+            margin: 20mm;
+            @bottom-right {
+                content: counter(page);
+            }
+        }
+
+        body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; color: #333; }
+        h1 { color: #1a1a1a; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+        
+        /* UI Elements (Hidden during Print) */
+        #editor-container { display: flex; gap: 20px; padding: 20px; height: 90vh; }
+        #input { width: 50%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; }
+        #render-btn { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; z-index: 1000; }
+
+        @media print {
+            #editor-container, #render-btn { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <button id="render-btn" onclick="generatePDF()">Generate PDF</button>
+
+    <div id="editor-container">
+        <textarea id="input" placeholder="Enter Markdown here... Use $$ for math!"></textarea>
+        <div id="preview" class="markdown-body"></div>
+    </div>
+
+    <script>
+        const input = document.getElementById('input');
+        const preview = document.getElementById('preview');
+
+        // Simple Math implementation for Marked
+        const renderer = new marked.Renderer();
+        const originalCode = renderer.code.bind(renderer);
+
+        // Function to render math using KaTeX
+        function renderMath(text) {
+            return text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+                return katex.renderToString(formula, { displayMode: true, throwOnError: false });
+            }).replace(/\$([\s\S]+?)\$/g, (match, formula) => {
+                return katex.renderToString(formula, { displayMode: false, throwOnError: false });
+            });
+        }
+
+        function updatePreview() {
+            const rawMD = input.value;
+            const html = marked.parse(rawMD);
+            preview.innerHTML = renderMath(html);
+        }
+
+        input.addEventListener('input', updatePreview);
+
+        async function generatePDF() {
+            // Prepare content for Paged.js
+            const content = preview.innerHTML;
+            const printContainer = document.createElement('div');
+            printContainer.innerHTML = content;
+            
+            // Trigger browser print dialog
+            window.print();
+        }
+
+        // Default Content
+        input.value = "# Hello World\n\nThis is a client-side PDF generator.\n\n## Math Support\n\nWhen $a \\ne 0$, there are two solutions to $ax^2 + bx + c = 0$:\n\n$$x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$$\n\n### Layout Features\n- A4 Paging via Paged.js\n- Automatic Page Numbering\n- Modern Typography";
+        updatePreview();
+    </script>
+</body>
+</html>
