@@ -3,144 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Markdown to PDF Studio</title>
+<title>Markdown → PDF</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 
-/* FORCE LIGHT MODE */
-:root {
-    color-scheme: light only;
-}
+:root { color-scheme: light only; }
 
-* { box-sizing: border-box; }
+* { box-sizing:border-box; }
 
 body {
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: system-ui, sans-serif;
-    background: #fff !important;
-    color: #000 !important;
+    margin:0;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    font-family:system-ui;
+    background:#f0f0f0;
 }
 
 /* NAV */
 
 nav {
-    padding: 10px 15px;
-    border-bottom: 2px solid #000;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background:#fff;
+    border-bottom:2px solid #000;
+    padding:10px 15px;
+    display:flex;
+    justify-content:space-between;
 }
 
-.controls {
-    display: flex;
-    gap: 10px;
-}
-
-.filename-input {
-    padding: 6px;
-    border: 1px solid #aaa;
-}
+.controls { display:flex; gap:10px; }
 
 .btn-download {
-    background: #000;
-    color: #fff;
-    border: none;
-    padding: 8px 15px;
-    cursor: pointer;
+    background:#000;
+    color:#fff;
+    border:none;
+    padding:8px 15px;
+    cursor:pointer;
 }
 
 /* LAYOUT */
 
 main {
-    flex: 1;
-    display: flex;
+    flex:1;
+    display:flex;
 }
 
 .pane {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #ddd;
-}
-
-.pane-header {
-    padding: 6px 10px;
-    background: #eee;
-    font-size: 11px;
-    font-weight: bold;
+    flex:1;
+    display:flex;
+    flex-direction:column;
 }
 
 textarea {
-    flex: 1;
-    padding: 15px;
-    font-family: monospace;
-    font-size: 15px;
-    border: none;
-    outline: none;
-    resize: none;
-    background: #fff;
-    color: #000;
+    flex:1;
+    border:none;
+    padding:15px;
+    font-family:monospace;
+    font-size:15px;
+    outline:none;
 }
 
-/* PREVIEW */
+/* PDF PREVIEW AREA */
+
+.preview-wrapper {
+    flex:1;
+    overflow:auto;
+    background:#999;
+    padding:30px;
+    display:flex;
+    justify-content:center;
+}
+
+/* SIMULATED PAPER */
 
 #pdf-root {
-    background: #fff !important;
-    color: #000 !important;
-    forced-color-adjust: none;
-    color-scheme: light only;
+    width:8.5in;
+    min-height:11in;
+    background:white !important;
+    color:black !important;
+    padding:0.75in;
+    box-shadow:0 0 15px rgba(0,0,0,.3);
+    forced-color-adjust:none;
+    color-scheme:light only;
 }
 
-#pdf-root,
 #pdf-root * {
-    background: #fff !important;
-    color: #000 !important;
-    filter: none !important;
+    background:white !important;
+    color:black !important;
 }
 
-@media (prefers-color-scheme: dark) {
-    #pdf-root,
-    #pdf-root * {
-        background: #fff !important;
-        color: #000 !important;
-    }
-}
-
-#preview {
-    flex: 1;
-    padding: 40px;
-    overflow-y: auto;
-}
+/* CONTENT */
 
 #preview h1,#preview h2 {
-    border-bottom: 1px solid #000;
+    border-bottom:1px solid #000;
 }
 
 #preview table {
-    width: 100%;
-    border-collapse: collapse;
+    width:100%;
+    border-collapse:collapse;
 }
 
-#preview th,#preview td {
-    border: 1px solid #000;
-    padding: 6px;
+#preview td,#preview th {
+    border:1px solid #000;
+    padding:6px;
 }
 
-#preview * {
-    page-break-inside: avoid;
-}
+/* MOBILE */
 
-.no-print { }
-
-@media(max-width:768px){
-    main { flex-direction: column; }
-    .pane { border-right:none; height:50%; }
+@media(max-width:900px){
+    #pdf-root { width:100%; min-height:auto; box-shadow:none; }
+    main { flex-direction:column; }
 }
 
 </style>
@@ -148,80 +122,57 @@ textarea {
 
 <body>
 
-<nav class="no-print">
-    <h3>MD → PDF</h3>
-    <div class="controls">
-        <input id="filename" class="filename-input" value="my_document">
-        <button class="btn-download" onclick="exportPDF()">Save PDF</button>
-    </div>
+<nav>
+<h3>MD → PDF</h3>
+<div class="controls">
+<input id="filename" value="document">
+<button class="btn-download" onclick="exportPDF()">Save PDF</button>
+</div>
 </nav>
 
 <main>
 
-<div class="pane no-print">
-    <div class="pane-header">Editor</div>
-    <textarea id="editor" oninput="renderContent()" placeholder="Type markdown..."></textarea>
+<div class="pane">
+<textarea id="editor" oninput="render()" placeholder="Type markdown..."></textarea>
 </div>
 
-<div class="pane">
-    <div class="pane-header no-print">Preview</div>
-
-    <div id="pdf-root">
-        <div id="preview"></div>
-    </div>
-
+<div class="pane preview-wrapper">
+<div id="pdf-root">
+<div id="preview"></div>
+</div>
 </div>
 
 </main>
 
 <script>
 
-const editor = document.getElementById("editor");
-const preview = document.getElementById("preview");
+const editor=document.getElementById("editor");
+const preview=document.getElementById("preview");
 
-function renderContent() {
-    preview.innerHTML = marked.parse(editor.value || "Start typing...");
+function render(){
+    preview.innerHTML=marked.parse(editor.value||"Start typing...");
 }
 
-async function exportPDF() {
+async function exportPDF(){
 
-    if (!editor.value.trim()) {
-        alert("Editor empty");
-        return;
-    }
+if(!editor.value.trim()) return alert("Empty");
 
-    const btn = document.querySelector(".btn-download");
-    btn.innerText = "Generating...";
+const clone=document.getElementById("pdf-root").cloneNode(true);
+clone.style.boxShadow="none";
 
-    const name = document.getElementById("filename").value || "document";
+document.body.appendChild(clone);
 
-    /* CLONE CLEAN TREE */
-    const clone = document.getElementById("pdf-root").cloneNode(true);
-    clone.style.background = "#fff";
-    clone.style.color = "#000";
+await html2pdf().set({
+margin:0,
+filename:(filename.value||"doc")+".pdf",
+html2canvas:{scale:2,backgroundColor:"#fff"},
+jsPDF:{unit:"in",format:"letter"}
+}).from(clone).save();
 
-    document.body.appendChild(clone);
-
-    const options = {
-        margin: 0.5,
-        filename: name + ".pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-            scale: 2,
-            backgroundColor: "#ffffff"
-        },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
-    };
-
-    try {
-        await html2pdf().set(options).from(clone).save();
-    } finally {
-        clone.remove();
-        btn.innerText = "Save PDF";
-    }
+clone.remove();
 }
 
-renderContent();
+render();
 
 </script>
 
