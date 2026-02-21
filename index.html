@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Markdown → PDF</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
@@ -10,111 +9,44 @@
 
 <style>
 
-:root { color-scheme: light only; }
-
-* { box-sizing:border-box; }
-
-body {
-    margin:0;
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-    font-family:system-ui;
-    background:#f0f0f0;
+body{
+margin:0;
+height:100vh;
+display:flex;
+flex-direction:column;
+font-family:system-ui;
 }
 
-/* NAV */
-
-nav {
-    background:#fff;
-    border-bottom:2px solid #000;
-    padding:10px 15px;
-    display:flex;
-    justify-content:space-between;
+nav{
+padding:10px;
+border-bottom:2px solid #000;
+display:flex;
+justify-content:space-between;
 }
 
-.controls { display:flex; gap:10px; }
-
-.btn-download {
-    background:#000;
-    color:#fff;
-    border:none;
-    padding:8px 15px;
-    cursor:pointer;
+main{
+flex:1;
+display:flex;
 }
 
-/* LAYOUT */
-
-main {
-    flex:1;
-    display:flex;
+textarea{
+flex:1;
+border:none;
+padding:15px;
+font-family:monospace;
 }
 
-.pane {
-    flex:1;
-    display:flex;
-    flex-direction:column;
+iframe{
+flex:1;
+border:none;
+background:#999;
 }
 
-textarea {
-    flex:1;
-    border:none;
-    padding:15px;
-    font-family:monospace;
-    font-size:15px;
-    outline:none;
-}
-
-/* PDF PREVIEW AREA */
-
-.preview-wrapper {
-    flex:1;
-    overflow:auto;
-    background:#999;
-    padding:30px;
-    display:flex;
-    justify-content:center;
-}
-
-/* SIMULATED PAPER */
-
-#pdf-root {
-    width:8.5in;
-    min-height:11in;
-    background:white !important;
-    color:black !important;
-    padding:0.75in;
-    box-shadow:0 0 15px rgba(0,0,0,.3);
-    forced-color-adjust:none;
-    color-scheme:light only;
-}
-
-#pdf-root * {
-    background:white !important;
-    color:black !important;
-}
-
-/* CONTENT */
-
-#preview h1,#preview h2 {
-    border-bottom:1px solid #000;
-}
-
-#preview table {
-    width:100%;
-    border-collapse:collapse;
-}
-
-#preview td,#preview th {
-    border:1px solid #000;
-    padding:6px;
-}
-
-/* MOBILE */
-
-@media(max-width:900px){
-    #pdf-root { width:100%; min-height:auto; box-shadow:none; }
-    main { flex-direction:column; }
+button{
+background:black;
+color:white;
+border:none;
+padding:8px 15px;
 }
 
 </style>
@@ -123,47 +55,78 @@ textarea {
 <body>
 
 <nav>
-<h3>MD → PDF</h3>
-<div class="controls">
 <input id="filename" value="document">
-<button class="btn-download" onclick="exportPDF()">Save PDF</button>
-</div>
+<button onclick="exportPDF()">Save PDF</button>
 </nav>
 
 <main>
 
-<div class="pane">
-<textarea id="editor" oninput="render()" placeholder="Type markdown..."></textarea>
-</div>
+<textarea id="editor" oninput="render()"># Hello
 
-<div class="pane preview-wrapper">
-<div id="pdf-root">
-<div id="preview"></div>
-</div>
-</div>
+This preview will NEVER go dark.</textarea>
+
+<iframe id="previewFrame"></iframe>
 
 </main>
 
 <script>
 
-const editor=document.getElementById("editor");
-const preview=document.getElementById("preview");
+const iframe=document.getElementById("previewFrame");
 
 function render(){
-    preview.innerHTML=marked.parse(editor.value||"Start typing...");
+
+const doc=iframe.contentDocument;
+
+doc.open();
+doc.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+:root{color-scheme:light only;}
+
+body{
+margin:0;
+padding:0.75in;
+background:white!important;
+color:black!important;
+font-family:system-ui;
+}
+
+*{
+background:white!important;
+color:black!important;
+forced-color-adjust:none;
+}
+
+h1,h2{border-bottom:1px solid black;}
+
+table{width:100%;border-collapse:collapse;}
+td,th{border:1px solid black;padding:6px;}
+
+</style>
+</head>
+
+<body>
+${marked.parse(editor.value)}
+</body>
+</html>
+`);
+doc.close();
 }
 
 async function exportPDF(){
 
-if(!editor.value.trim()) return alert("Empty");
+const clone=iframe.contentDocument.body.cloneNode(true);
 
-const clone=document.getElementById("pdf-root").cloneNode(true);
-clone.style.boxShadow="none";
+clone.style.background="white";
+clone.style.color="black";
 
 document.body.appendChild(clone);
 
 await html2pdf().set({
-margin:0,
+margin:0.5,
 filename:(filename.value||"doc")+".pdf",
 html2canvas:{scale:2,backgroundColor:"#fff"},
 jsPDF:{unit:"in",format:"letter"}
