@@ -19,47 +19,55 @@
         /* Navbar */
         nav { 
             background: #ffffff; padding: 0.8rem 1rem; display: flex; justify-content: space-between; 
-            align-items: center; border-bottom: 2px solid #000; flex-wrap: wrap; gap: 10px;
+            align-items: center; border-bottom: 2px solid #000; z-index: 100;
         }
         .controls { display: flex; gap: 10px; align-items: center; }
-        .filename-input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 150px; }
+        .filename-input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 140px; }
         .btn-download { background: #000; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; font-weight: 600; cursor: pointer; }
 
-        /* Layout */
-        main { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
-        .pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #ddd; }
+        /* Main Workspace */
+        main { display: flex; flex: 1; overflow: hidden; }
+        .pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         
         @media (max-width: 768px) {
             main { flex-direction: column; }
-            .pane { flex: none; height: 50%; border-right: none; }
+            .pane { flex: none; height: 50%; }
+            .pane:first-child { border-bottom: 1px solid #ddd; }
         }
 
-        .pane-header { padding: 6px 15px; background: #eee; font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ddd; }
+        .pane-header { padding: 6px 15px; background: #eee; font-size: 10px; font-weight: bold; border-bottom: 1px solid #ddd; }
         
-        textarea { flex: 1; border: none; padding: 15px; font-family: monospace; font-size: 16px; outline: none; resize: none; color: #000; }
+        /* Editor Styles */
+        textarea { 
+            flex: 1; border: none; padding: 15px; font-family: monospace; font-size: 16px; 
+            outline: none; resize: none; color: #000; background: #fff;
+        }
         
-        /* PDF STYLING */
+        /* Preview Styles - Forced Black on White */
         #preview { 
             flex: 1; padding: 40px; overflow-y: auto; 
-            background-color: #ffffff !important; 
-            color: #000000 !important; 
-            line-height: 1.6; 
+            background: #fff !important; color: #000 !important; 
         }
-        
-        /* Force full width for the PDF generator */
-        .html2pdf__container { width: 800px !important; }
 
-        #preview * { color: #000000 !important; }
-        #preview h1, #preview h2 { border-bottom: 1px solid #000; padding-bottom: 5px; }
-        #preview table { width: 100%; border-collapse: collapse; }
-        #preview th, #preview td { border: 1px solid #000; padding: 8px; }
+        /* Markdown Content Styling */
+        #preview h1, #preview h2 { border-bottom: 1px solid #000; padding-bottom: 5px; color: #000 !important; }
+        #preview p, #preview li { line-height: 1.6; color: #000 !important; }
+        #preview table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        #preview th, #preview td { border: 1px solid #000; padding: 8px; color: #000 !important; }
 
-        /* Pagination */
-        #preview p, #preview li, #preview pre, #preview tr {
+        /* Pagination Control */
+        #preview p, #preview li, #preview pre, #preview tr, #preview blockquote {
             page-break-inside: avoid;
             break-inside: avoid;
         }
-        .page-break { page-break-after: always; break-after: page; }
+
+        /* Utility: Hide from screen but keep for PDF engine */
+        #offscreen-container {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 800px; /* Fixed width for consistent layout */
+        }
 
         @media print { .no-print { display: none; } }
     </style>
@@ -67,9 +75,9 @@
 <body>
 
 <nav class="no-print">
-    <h1 style="margin:0; font-size: 1.2rem;">MD &rarr; PDF</h1>
+    <h1 style="margin:0; font-size: 1.1rem;">MD to PDF</h1>
     <div class="controls">
-        <input type="text" id="filename" class="filename-input" value="my_document" placeholder="Filename">
+        <input type="text" id="filename" class="filename-input" value="document" placeholder="Filename">
         <button class="btn-download" onclick="exportPDF()">Save PDF</button>
     </div>
 </nav>
@@ -77,55 +85,69 @@
 <main>
     <div class="pane no-print">
         <div class="pane-header">Editor</div>
-        <textarea id="editor" oninput="renderContent()" spellcheck="false" placeholder="Start typing..."></textarea>
+        <textarea id="editor" oninput="renderContent()" spellcheck="false" placeholder="Type here..."></textarea>
     </div>
 
     <div class="pane">
-        <div class="pane-header no-print">Preview</div>
+        <div class="pane-header no-print">Live Preview</div>
         <div id="preview"></div>
     </div>
 </main>
 
+<div id="offscreen-container"></div>
+
 <script>
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
+    const offscreen = document.getElementById('offscreen-container');
 
     function renderContent() {
-        preview.innerHTML = marked.parse(editor.value);
+        const html = marked.parse(editor.value);
+        preview.innerHTML = html;
+        // Sync the offscreen version for the PDF engine
+        offscreen.innerHTML = `<div style="padding: 50px; background: white; color: black;">${html}</div>`;
     }
 
     async function exportPDF() {
-        if (!editor.value.trim()) return alert("Editor is empty.");
+        if (!editor.value.trim()) {
+            alert("Please enter some text.");
+            return;
+        }
 
         const btn = document.querySelector('.btn-download');
-        btn.innerText = "Generating...";
-        
-        let name = document.getElementById('filename').value.trim() || 'document';
+        btn.innerText = "Working...";
+        btn.disabled = true;
+
+        const name = (document.getElementById('filename').value || 'document').trim();
 
         const options = {
             margin: [0.5, 0.5],
             filename: name + '.pdf',
             image: { type: 'jpeg', quality: 0.98 },
-            // FIX: This forces the renderer to use a standard width regardless of screen size
             html2canvas: { 
                 scale: 2, 
                 useCORS: true,
-                width: 800 // Forces the 'camera' to see a wider area
+                logging: false,
+                letterRendering: true,
+                windowWidth: 800 // Forces desktop-width rendering
             },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
             pagebreak: { mode: ['css', 'legacy'] }
         };
 
         try {
-            // We target the preview element directly
-            await html2pdf().set(options).from(preview).save();
+            // We use the offscreen element to ensure visibility and dimensions
+            await html2pdf().set(options).from(offscreen).save();
         } catch (err) {
-            console.error(err);
+            console.error("PDF Error:", err);
+            alert("Export failed. Check console.");
         } finally {
             btn.innerText = "Save PDF";
+            btn.disabled = false;
         }
     }
 
+    // Initialize blank state
     renderContent();
 </script>
 
