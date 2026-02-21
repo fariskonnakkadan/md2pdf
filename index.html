@@ -5,56 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern MD 2 PDF</title>
     
-    <script src="paged.polyfill.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
+    <script src="paged.polyfill.js"></script>
+
     <style>
-        /* Professional Page Setup for PDF */
+        /* --- PROFESSIONAL PDF LAYOUT --- */
         @page {
             size: A4;
-            margin: 25mm; /* Professional academic margin */
+            margin: 25mm;
             @bottom-right {
                 content: counter(page);
-                font-family: sans-serif;
+                font-family: 'Inter', sans-serif;
                 font-size: 10pt;
             }
         }
 
-        /* Standard Typography */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
-        .markdown-body { padding: 20px; }
-        pre { background: #f6f8fa; padding: 16px; border-radius: 6px; break-inside: avoid; }
-        h1, h2, h3 { break-after: avoid; color: #222; }
+        /* --- UI STYLING (Screen Only) --- */
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #121212; /* Dark theme for editor */
+            color: #eee;
+        }
 
-        /* UI Styling (Hidden during Print) */
-        #ui-wrapper { display: flex; height: 100vh; gap: 10px; padding: 10px; box-sizing: border-box; }
-        #input { width: 50%; height: 100%; padding: 20px; border: 1px solid #ddd; resize: none; font-family: monospace; }
-        #preview { width: 50%; overflow-y: auto; border: 1px solid #eee; background: white; }
-        #controls { position: fixed; top: 20px; right: 40px; z-index: 1000; }
-        
+        #ui-wrapper { 
+            display: flex; 
+            height: 100vh; 
+            flex-direction: row;
+        }
+
+        #input { 
+            width: 50%; 
+            height: 100%; 
+            padding: 20px; 
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            border-right: 1px solid #333;
+            resize: none; 
+            font-family: 'Fira Code', monospace;
+            outline: none;
+        }
+
+        #preview { 
+            width: 50%; 
+            height: 100%;
+            overflow-y: auto; 
+            background: white; 
+            color: #333;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        #controls { 
+            position: fixed; 
+            bottom: 20px; 
+            right: 20px; 
+            z-index: 1000; 
+        }
+
         button { 
-            padding: 10px 20px; background: #2ea44f; color: white; 
-            border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+            padding: 12px 24px; 
+            background: #007aff; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
-        /* Paged.js specific: Ensures UI doesn't break the PDF */
-        @media print {
-            #ui-wrapper, #controls { display: none !important; }
-            .pagedjs_pages { background: white !important; }
+        /* --- THE FIX: VISIBILITY CONTROL --- */
+        
+        /* Hide Paged.js generated pages on the screen so they don't block the UI */
+        .pagedjs_pages {
+            display: none !important;
         }
+
+        @media print {
+            /* Hide the UI when printing */
+            #ui-wrapper, #controls { 
+                display: none !important; 
+            }
+            /* Show the Paged.js generated content only in print */
+            .pagedjs_pages { 
+                display: block !important; 
+            }
+            body { background: white; }
+        }
+
+        /* Markdown Styling for Preview */
+        .markdown-body h1 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+        .markdown-body pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; }
+        .markdown-body code { font-family: monospace; }
     </style>
 </head>
 <body>
 
     <div id="controls">
-        <button onclick="window.print()">Export to PDF</button>
+        <button onclick="window.print()">Export PDF</button>
     </div>
 
     <div id="ui-wrapper">
-        <textarea id="input" placeholder="Type Markdown..."></textarea>
+        <textarea id="input" placeholder="Enter Markdown here..."></textarea>
         <div id="preview" class="markdown-body"></div>
     </div>
 
@@ -62,26 +118,26 @@
         const input = document.getElementById('input');
         const preview = document.getElementById('preview');
 
-        // Math Rendering Function
         function processMath(text) {
-            // Block Math $$ ... $$
+            // Block Math $$...$$
             text = text.replace(/\$\$([\s\S]+?)\$\$/g, (m, g1) => 
-                katex.renderToString(g1, { displayMode: true }));
-            // Inline Math $ ... $
-            text = text.replace(/\$([^\n\s][^$\n]*?[^\n\s])\$/g, (m, g1) => 
-                katex.renderToString(g1, { displayMode: false }));
+                `<div class="math-block">${katex.renderToString(g1, { displayMode: true, throwOnError: false })}</div>`);
+            // Inline Math $...$
+            text = text.replace(/\$([^\s$][^$]*?[^\s$])\$/g, (m, g1) => 
+                katex.renderToString(g1, { displayMode: false, throwOnError: false }));
             return text;
         }
 
         function update() {
-            const html = marked.parse(input.value);
-            preview.innerHTML = processMath(html);
+            const rawMD = input.value;
+            const htmlContent = marked.parse(rawMD);
+            preview.innerHTML = processMath(htmlContent);
         }
 
         input.addEventListener('input', update);
 
-        // Default content
-        input.value = "# Sample Document\n\nThis uses **Paged.js** for Puppeteer-like layouts.\n\n## Math\n$E = mc^2$\n\n$$\\int_a^b f(x)dx$$\n\n## Layout\nNotice that headers won't be separated from their paragraphs thanks to `break-after: avoid`.";
+        // Initial Sample Content
+        input.value = "# Technical Document\n\n## Math Section\nThe quadratic formula is:\n\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\n## Features\n- **Paged.js** for Puppeteer-style margins.\n- **KaTeX** for lightning-fast math.\n- **Client-side** processing.";
         update();
     </script>
 </body>
