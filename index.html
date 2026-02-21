@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Markdown → PDF</title>
+
+<!-- Disable smart dark mode on iOS -->
+<meta name="color-scheme" content="light only">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -22,6 +26,7 @@ padding:10px;
 border-bottom:2px solid #000;
 display:flex;
 justify-content:space-between;
+align-items:center;
 }
 
 main{
@@ -34,6 +39,9 @@ flex:1;
 border:none;
 padding:15px;
 font-family:monospace;
+font-size:15px;
+outline:none;
+resize:none;
 }
 
 iframe{
@@ -47,6 +55,16 @@ background:black;
 color:white;
 border:none;
 padding:8px 15px;
+cursor:pointer;
+}
+
+input{
+padding:6px;
+}
+
+@media(max-width:900px){
+main{flex-direction:column;}
+iframe{height:50vh;}
 }
 
 </style>
@@ -61,9 +79,17 @@ padding:8px 15px;
 
 <main>
 
-<textarea id="editor" oninput="render()"># Hello
+<textarea id="editor" oninput="render()">
+# Hello
 
-This preview will NEVER go dark.</textarea>
+This preview is always white.
+
+## Table
+
+| A | B |
+|---|---|
+| 1 | 2 |
+</textarea>
 
 <iframe id="previewFrame"></iframe>
 
@@ -71,17 +97,19 @@ This preview will NEVER go dark.</textarea>
 
 <script>
 
-const iframe=document.getElementById("previewFrame");
+const iframe = document.getElementById("previewFrame");
+const editor = document.getElementById("editor");
 
 function render(){
 
-const doc=iframe.contentDocument;
+const doc = iframe.contentDocument;
 
 doc.open();
 doc.write(`
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="color-scheme" content="light only">
 <style>
 
 :root{color-scheme:light only;}
@@ -89,14 +117,16 @@ doc.write(`
 body{
 margin:0;
 padding:0.75in;
-background:white!important;
-color:black!important;
+width:8.5in;
+min-height:11in;
+background:white !important;
+color:black !important;
 font-family:system-ui;
 }
 
 *{
-background:white!important;
-color:black!important;
+background:white !important;
+color:black !important;
 forced-color-adjust:none;
 }
 
@@ -107,7 +137,6 @@ td,th{border:1px solid black;padding:6px;}
 
 </style>
 </head>
-
 <body>
 ${marked.parse(editor.value)}
 </body>
@@ -118,21 +147,22 @@ doc.close();
 
 async function exportPDF(){
 
-const clone=iframe.contentDocument.body.cloneNode(true);
-
-clone.style.background="white";
-clone.style.color="black";
-
-document.body.appendChild(clone);
+const content = iframe.contentDocument.body;
 
 await html2pdf().set({
-margin:0.5,
-filename:(filename.value||"doc")+".pdf",
-html2canvas:{scale:2,backgroundColor:"#fff"},
-jsPDF:{unit:"in",format:"letter"}
-}).from(clone).save();
+margin:0,
+filename:(filename.value||"document")+".pdf",
+html2canvas:{
+scale:2,
+backgroundColor:"#ffffff"
+},
+jsPDF:{
+unit:"in",
+format:"letter",
+orientation:"portrait"
+}
+}).from(content).save();
 
-clone.remove();
 }
 
 render();
