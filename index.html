@@ -3,145 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown to Professional PDF</title>
+    <title>Markdown to PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-    <script src="paged.polyfill.js"></script>
-
     <style>
-        :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
-            --border: #e2e8f0;
-        }
-
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: #1e293b; }
-
-        /* --- UI LAYOUT --- */
-        #toolbar {
-            height: 60px;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        #main-container {
-            display: flex;
-            height: calc(100vh - 60px);
-            padding: 20px;
-            gap: 20px;
-        }
-
-        #input {
-            flex: 1;
-            height: 100%;
-            padding: 25px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            resize: none;
-            outline: none;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        #preview-container {
-            flex: 1;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow-y: auto;
-            padding: 40px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-
-        button#download-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        button#download-btn:active { transform: scale(0.95); }
-
-        /* --- PAGED.JS & PRINT SETUP --- */
-        
-        /* Hide the Paged.js rendering on screen to prevent blank pages */
-        .pagedjs_pages { display: none !important; }
-
-        @page {
-            size: A4;
-            margin: 20mm;
-            @bottom-right {
-                content: counter(page);
-                font-size: 10pt;
-            }
-        }
-
-        @media print {
-            #toolbar, #main-container { display: none !important; }
-            .pagedjs_pages { display: block !important; }
-        }
-
-        /* Content Styling */
-        .markdown-body h1 { border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
-        .markdown-body code { background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; }
-        .math-block { margin: 1.5rem 0; text-align: center; }
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 300px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; resize: vertical; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #preview { display: none; } /* Hidden from screen, used for PDF generation */
     </style>
 </head>
 <body>
 
-    <div id="toolbar">
-        <span style="font-weight: 700; color: var(--primary);">MD <span style="color:#64748b">2</span> PDF</span>
-        <button id="download-btn" onclick="window.print()">Save as PDF</button>
-    </div>
+<div class="container">
+    <h2>Markdown to PDF</h2>
+    <p>Paste your Markdown below:</p>
+    <textarea id="markdown-input" placeholder="# Hello World
+Write some **bold** text or [links](https://google.com)..."></textarea>
+    <br>
+    <button onclick="generatePDF()">Convert & Save PDF</button>
+</div>
 
-    <div id="main-container">
-        <textarea id="input" placeholder="Paste your Markdown here..."></textarea>
-        <div id="preview-container" class="markdown-body"></div>
-    </div>
+<div id="preview"></div>
 
-    <div id="print-content" style="display:none;"></div>
+<script>
+    function generatePDF() {
+        const markdownText = document.getElementById('markdown-input').value;
+        const previewElement = document.getElementById('preview');
 
-    <script>
-        const input = document.getElementById('input');
-        const preview = document.getElementById('preview-container');
-        const printContent = document.getElementById('print-content');
-
-        function updateOutput() {
-            const raw = input.value;
-            
-            // Parse Markdown
-            let html = marked.parse(raw);
-
-            // Render Math (KaTeX)
-            // Block math $$...$$
-            html = html.replace(/\$\$([\s\S]+?)\$\$/g, (m, g1) => 
-                `<div class="math-block">${katex.renderToString(g1, { displayMode: true, throwOnError: false })}</div>`);
-            // Inline math $...$
-            html = html.replace(/\$([^\s$][^$]*?[^\s$])\$/g, (m, g1) => 
-                katex.renderToString(g1, { displayMode: false, throwOnError: false }));
-
-            // Update UI Preview and Hidden Print Target
-            preview.innerHTML = html;
-            printContent.innerHTML = html;
+        if (!markdownText.trim()) {
+            alert("Please paste some Markdown first!");
+            return;
         }
 
-        input.addEventListener('input', updateOutput);
+        // 1. Convert Markdown to HTML
+        previewElement.innerHTML = marked.parse(markdownText);
 
-        // Initial Sample
-        input.value = "# Sample Document\n\nPaste your content here. Support for **bold**, *italics*, and math:\n\n$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$\n\n### Paged Layout\nThis uses @page CSS rules to ensure professional A4 margins and page numbering.";
-        updateOutput();
-    </script>
+        // 2. PDF Configuration
+        const opt = {
+            margin:       1,
+            filename:     'converted-document.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // 3. Generate and Download
+        html2pdf().set(opt).from(previewElement).save();
+    }
+</script>
+
 </body>
 </html>
