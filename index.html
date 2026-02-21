@@ -9,12 +9,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        /* UI Base Styles */
         * { box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
             margin: 0; display: flex; flex-direction: column; height: 100vh; 
-            background: #f6f8fa; 
+            background: #ffffff; color: #000;
         }
         
         /* Navbar */
@@ -22,81 +21,45 @@
             background: #ffffff; padding: 0.8rem 1rem; display: flex; justify-content: space-between; 
             align-items: center; border-bottom: 2px solid #000; flex-wrap: wrap; gap: 10px;
         }
-        nav h1 { margin: 0; font-size: 1rem; font-weight: 800; color: #000; }
-        
         .controls { display: flex; gap: 10px; align-items: center; }
-        .filename-input { 
-            padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; 
-            font-size: 14px; outline: none; width: 150px;
-        }
-        .btn-download { 
-            background: #000; color: #fff; border: none; padding: 8px 15px; 
-            border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 14px; 
-        }
-        .btn-download:hover { background: #333; }
+        .filename-input { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; width: 150px; }
+        .btn-download { background: #000; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; font-weight: 600; cursor: pointer; }
 
-        /* Workspace Layout */
+        /* Layout */
         main { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
-        .pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid #ddd; }
         
         @media (max-width: 768px) {
             main { flex-direction: column; }
-            .pane { flex: none; height: 50%; }
-            .pane:first-child { border-bottom: 2px solid #d0d7de; }
-            .filename-input { width: 120px; }
+            .pane { flex: none; height: 50%; border-right: none; }
         }
 
-        .pane-header { 
-            padding: 6px 15px; background: #e1e4e8; border-bottom: 1px solid #d0d7de; 
-            font-size: 10px; font-weight: bold; color: #000; text-transform: uppercase; 
-        }
+        .pane-header { padding: 6px 15px; background: #eee; font-size: 10px; font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ddd; }
         
-        /* Editor */
-        textarea { 
-            flex: 1; border: none; padding: 15px; font-family: monospace; font-size: 16px; 
-            outline: none; resize: none; background: #ffffff; color: #000; 
-        }
+        textarea { flex: 1; border: none; padding: 15px; font-family: monospace; font-size: 16px; outline: none; resize: none; color: #000; }
         
-        /* =========================================
-           PDF PREVIEW STYLES (STRICT BLACK & WHITE) 
-           ========================================= */
-        #preview-container { flex: 1; overflow-y: auto; background: #ffffff; }
+        /* PDF STYLING */
         #preview { 
-            padding: 20px 30px; 
+            flex: 1; padding: 40px; overflow-y: auto; 
             background-color: #ffffff !important; 
             color: #000000 !important; 
             line-height: 1.6; 
         }
         
-        /* Force Black Text */
+        /* Force full width for the PDF generator */
+        .html2pdf__container { width: 800px !important; }
+
         #preview * { color: #000000 !important; }
-        
-        #preview h1, #preview h2, #preview h3 { border-bottom: 1px solid #000; padding-bottom: 5px; }
-        #preview pre { background: #f4f4f4 !important; padding: 10px; border: 1px solid #000; overflow-x: auto; }
-        #preview code { background: #f4f4f4 !important; padding: 2px 4px; border-radius: 3px; font-size: 90%; border: 1px solid #ccc; }
-        #preview table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        #preview h1, #preview h2 { border-bottom: 1px solid #000; padding-bottom: 5px; }
+        #preview table { width: 100%; border-collapse: collapse; }
         #preview th, #preview td { border: 1px solid #000; padding: 8px; }
 
-        /* =========================================
-           SIMPLE PAGINATION & ORPHAN PREVENTION 
-           ========================================= */
-        #preview p, 
-        #preview li, 
-        #preview h1, 
-        #preview h2, 
-        #preview h3, 
-        #preview pre, 
-        #preview blockquote,
-        #preview tr {
+        /* Pagination */
+        #preview p, #preview li, #preview pre, #preview tr {
             page-break-inside: avoid;
             break-inside: avoid;
         }
-
-        /* Manual Page Break Class */
-        .page-break {
-            page-break-after: always;
-            break-after: page;
-        }
+        .page-break { page-break-after: always; break-after: page; }
 
         @media print { .no-print { display: none; } }
     </style>
@@ -104,21 +67,21 @@
 <body>
 
 <nav class="no-print">
-    <h1>MD &rarr; PDF</h1>
+    <h1 style="margin:0; font-size: 1.2rem;">MD &rarr; PDF</h1>
     <div class="controls">
-        <input type="text" id="filename" class="filename-input" value="document" placeholder="Filename">
+        <input type="text" id="filename" class="filename-input" value="my_document" placeholder="Filename">
         <button class="btn-download" onclick="exportPDF()">Save PDF</button>
     </div>
 </nav>
 
 <main>
     <div class="pane no-print">
-        <div class="pane-header">Markdown Editor</div>
-        <textarea id="editor" oninput="renderContent()" spellcheck="false" placeholder="Start typing your markdown here..."></textarea>
+        <div class="pane-header">Editor</div>
+        <textarea id="editor" oninput="renderContent()" spellcheck="false" placeholder="Start typing..."></textarea>
     </div>
 
-    <div class="pane" id="preview-container">
-        <div class="pane-header no-print">Final PDF Preview</div>
+    <div class="pane">
+        <div class="pane-header no-print">Preview</div>
         <div id="preview"></div>
     </div>
 </main>
@@ -126,46 +89,43 @@
 <script>
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
-    const filenameInput = document.getElementById('filename');
 
     function renderContent() {
         preview.innerHTML = marked.parse(editor.value);
     }
 
     async function exportPDF() {
-        if (!editor.value.trim()) return alert("Write something first!");
+        if (!editor.value.trim()) return alert("Editor is empty.");
 
         const btn = document.querySelector('.btn-download');
-        const originalText = btn.innerText;
-        btn.innerText = "Processing...";
+        btn.innerText = "Generating...";
         
-        // Grab filename and ensure it ends with .pdf
-        let name = filenameInput.value.trim() || 'document';
-        if (!name.toLowerCase().endsWith('.pdf')) {
-            name += '.pdf';
-        }
+        let name = document.getElementById('filename').value.trim() || 'document';
 
-        // PDF Configuration
         const options = {
-            margin:       0.5,
-            filename:     name,
-            image:        { type: 'jpeg', quality: 1 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-            pagebreak:    { mode: ['css', 'legacy'] } 
+            margin: [0.5, 0.5],
+            filename: name + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            // FIX: This forces the renderer to use a standard width regardless of screen size
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true,
+                width: 800 // Forces the 'camera' to see a wider area
+            },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
         };
 
         try {
+            // We target the preview element directly
             await html2pdf().set(options).from(preview).save();
         } catch (err) {
-            console.error("PDF Error:", err);
-            alert("Failed to generate PDF.");
+            console.error(err);
         } finally {
-            btn.innerText = originalText;
+            btn.innerText = "Save PDF";
         }
     }
 
-    // Load initial content (which is now empty)
     renderContent();
 </script>
 
