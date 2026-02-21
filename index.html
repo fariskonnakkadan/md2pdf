@@ -3,45 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MD 2 PDF Converter</title>
+    <title>Modern MD 2 PDF</title>
     
-    <script src="https://unpkg.com/pagedjs/dist/paged.polyfill.js"></script>
+    <script src="paged.polyfill.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
     <style>
-        /* Professional PDF Styling */
+        /* Professional Page Setup for PDF */
         @page {
             size: A4;
-            margin: 20mm;
+            margin: 25mm; /* Professional academic margin */
             @bottom-right {
                 content: counter(page);
+                font-family: sans-serif;
+                font-size: 10pt;
             }
         }
 
-        body { font-family: 'Inter', system-ui, sans-serif; line-height: 1.6; color: #333; }
-        h1 { color: #1a1a1a; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
-        
-        /* UI Elements (Hidden during Print) */
-        #editor-container { display: flex; gap: 20px; padding: 20px; height: 90vh; }
-        #input { width: 50%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; }
-        #render-btn { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 50px; cursor: pointer; z-index: 1000; }
+        /* Standard Typography */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
+        .markdown-body { padding: 20px; }
+        pre { background: #f6f8fa; padding: 16px; border-radius: 6px; break-inside: avoid; }
+        h1, h2, h3 { break-after: avoid; color: #222; }
 
+        /* UI Styling (Hidden during Print) */
+        #ui-wrapper { display: flex; height: 100vh; gap: 10px; padding: 10px; box-sizing: border-box; }
+        #input { width: 50%; height: 100%; padding: 20px; border: 1px solid #ddd; resize: none; font-family: monospace; }
+        #preview { width: 50%; overflow-y: auto; border: 1px solid #eee; background: white; }
+        #controls { position: fixed; top: 20px; right: 40px; z-index: 1000; }
+        
+        button { 
+            padding: 10px 20px; background: #2ea44f; color: white; 
+            border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
+
+        /* Paged.js specific: Ensures UI doesn't break the PDF */
         @media print {
-            #editor-container, #render-btn { display: none !important; }
+            #ui-wrapper, #controls { display: none !important; }
+            .pagedjs_pages { background: white !important; }
         }
     </style>
 </head>
 <body>
 
-    <button id="render-btn" onclick="generatePDF()">Generate PDF</button>
+    <div id="controls">
+        <button onclick="window.print()">Export to PDF</button>
+    </div>
 
-    <div id="editor-container">
-        <textarea id="input" placeholder="Enter Markdown here... Use $$ for math!"></textarea>
+    <div id="ui-wrapper">
+        <textarea id="input" placeholder="Type Markdown..."></textarea>
         <div id="preview" class="markdown-body"></div>
     </div>
 
@@ -49,40 +62,27 @@
         const input = document.getElementById('input');
         const preview = document.getElementById('preview');
 
-        // Simple Math implementation for Marked
-        const renderer = new marked.Renderer();
-        const originalCode = renderer.code.bind(renderer);
-
-        // Function to render math using KaTeX
-        function renderMath(text) {
-            return text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-                return katex.renderToString(formula, { displayMode: true, throwOnError: false });
-            }).replace(/\$([\s\S]+?)\$/g, (match, formula) => {
-                return katex.renderToString(formula, { displayMode: false, throwOnError: false });
-            });
+        // Math Rendering Function
+        function processMath(text) {
+            // Block Math $$ ... $$
+            text = text.replace(/\$\$([\s\S]+?)\$\$/g, (m, g1) => 
+                katex.renderToString(g1, { displayMode: true }));
+            // Inline Math $ ... $
+            text = text.replace(/\$([^\n\s][^$\n]*?[^\n\s])\$/g, (m, g1) => 
+                katex.renderToString(g1, { displayMode: false }));
+            return text;
         }
 
-        function updatePreview() {
-            const rawMD = input.value;
-            const html = marked.parse(rawMD);
-            preview.innerHTML = renderMath(html);
+        function update() {
+            const html = marked.parse(input.value);
+            preview.innerHTML = processMath(html);
         }
 
-        input.addEventListener('input', updatePreview);
+        input.addEventListener('input', update);
 
-        async function generatePDF() {
-            // Prepare content for Paged.js
-            const content = preview.innerHTML;
-            const printContainer = document.createElement('div');
-            printContainer.innerHTML = content;
-            
-            // Trigger browser print dialog
-            window.print();
-        }
-
-        // Default Content
-        input.value = "# Hello World\n\nThis is a client-side PDF generator.\n\n## Math Support\n\nWhen $a \\ne 0$, there are two solutions to $ax^2 + bx + c = 0$:\n\n$$x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}$$\n\n### Layout Features\n- A4 Paging via Paged.js\n- Automatic Page Numbering\n- Modern Typography";
-        updatePreview();
+        // Default content
+        input.value = "# Sample Document\n\nThis uses **Paged.js** for Puppeteer-like layouts.\n\n## Math\n$E = mc^2$\n\n$$\\int_a^b f(x)dx$$\n\n## Layout\nNotice that headers won't be separated from their paragraphs thanks to `break-after: avoid`.";
+        update();
     </script>
 </body>
 </html>
