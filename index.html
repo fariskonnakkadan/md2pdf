@@ -9,6 +9,19 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
 
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+  },
+  svg: { fontCache: 'global' }
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
 <style>
 
 body{
@@ -32,8 +45,6 @@ flex:1;
 display:flex;
 }
 
-/* MARKDOWN EDITOR */
-
 textarea{
 flex:1;
 border-right:2px solid #000;
@@ -43,8 +54,6 @@ font-size:15px;
 outline:none;
 resize:none;
 }
-
-/* PREVIEW */
 
 iframe{
 flex:1;
@@ -100,6 +109,11 @@ border-bottom:2px solid #000;
 const iframe = document.getElementById("previewFrame");
 const editor = document.getElementById("editor");
 
+marked.setOptions({
+  breaks: true,
+  gfm: true
+});
+
 function render(){
 
 const doc = iframe.contentDocument;
@@ -109,6 +123,7 @@ doc.write(`
 <!DOCTYPE html>
 <html>
 <head>
+
 <meta name="color-scheme" content="light only">
 
 <style>
@@ -149,18 +164,34 @@ padding:10px;
 }
 
 </style>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]
+  },
+  svg: { fontCache: 'global' }
+};
+<\/script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"><\/script>
+
 </head>
 
 <body>
 ${marked.parse(editor.value)}
+
+<script>
+MathJax.typeset();
+<\/script>
+
 </body>
 </html>
 `);
 
 doc.close();
 }
-
-/* Native browser PDF */
 
 function exportPDF(){
 
@@ -203,18 +234,31 @@ padding:6px;
 pre{
 background:#f4f4f4;
 padding:10px;
-overflow:auto;
-}
-
-code{
-font-family:monospace;
 }
 
 </style>
+
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]
+  },
+  svg: { fontCache: 'global' }
+};
+<\/script>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"><\/script>
+
 </head>
 
 <body>
 ${marked.parse(editor.value)}
+
+<script>
+MathJax.typeset();
+<\/script>
+
 </body>
 </html>
 `);
@@ -223,8 +267,10 @@ printWindow.document.close();
 printWindow.focus();
 
 printWindow.onload = function(){
+setTimeout(()=>{
 printWindow.print();
 printWindow.close();
+},500);
 };
 
 }
