@@ -32,9 +32,11 @@ flex:1;
 display:flex;
 }
 
+/* MARKDOWN EDITOR */
+
 textarea{
 flex:1;
-border:none;
+border-right:2px solid #000;
 padding:15px;
 font-family:monospace;
 font-size:15px;
@@ -42,10 +44,12 @@ outline:none;
 resize:none;
 }
 
+/* PREVIEW */
+
 iframe{
 flex:1;
-border:none;
-background:#ccc;
+border-left:2px solid #000;
+background:#eee;
 }
 
 button{
@@ -62,7 +66,15 @@ padding:6px;
 
 @media(max-width:900px){
 main{flex-direction:column;}
-iframe{height:50vh;}
+iframe{
+height:50vh;
+border-left:none;
+border-top:2px solid #000;
+}
+textarea{
+border-right:none;
+border-bottom:2px solid #000;
+}
 }
 
 </style>
@@ -77,17 +89,7 @@ iframe{height:50vh;}
 
 <main>
 
-<textarea id="editor" oninput="render()">
-# Hello
-
-This preview is always white.
-
-## Table
-
-| A | B |
-|---|---|
-| 1 | 2 |
-</textarea>
+<textarea id="editor" oninput="render()" placeholder="Write markdown here..."></textarea>
 
 <iframe id="previewFrame"></iframe>
 
@@ -127,10 +129,19 @@ color:black !important;
 forced-color-adjust:none;
 }
 
-h1,h2{border-bottom:1px solid black;}
+h1,h2{
+border-bottom:1px solid black;
+}
 
-table{width:100%;border-collapse:collapse;}
-td,th{border:1px solid black;padding:6px;}
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid black;
+padding:6px;
+}
 
 pre{
 background:#f4f4f4 !important;
@@ -145,10 +156,11 @@ ${marked.parse(editor.value)}
 </body>
 </html>
 `);
+
 doc.close();
 }
 
-/* PRINT BASED PDF (same technique as DeepSchool) */
+/* Native browser PDF */
 
 function exportPDF(){
 
