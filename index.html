@@ -5,11 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Markdown → PDF</title>
 
-<!-- Disable smart dark mode on iOS -->
 <meta name="color-scheme" content="light only">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 
@@ -47,7 +45,7 @@ resize:none;
 iframe{
 flex:1;
 border:none;
-background:#999;
+background:#ccc;
 }
 
 button{
@@ -110,9 +108,8 @@ doc.write(`
 <html>
 <head>
 <meta name="color-scheme" content="light only">
-<style>
 
-:root{color-scheme:light only;}
+<style>
 
 body{
 margin:0;
@@ -135,8 +132,14 @@ h1,h2{border-bottom:1px solid black;}
 table{width:100%;border-collapse:collapse;}
 td,th{border:1px solid black;padding:6px;}
 
+pre{
+background:#f4f4f4 !important;
+padding:10px;
+}
+
 </style>
 </head>
+
 <body>
 ${marked.parse(editor.value)}
 </body>
@@ -145,23 +148,72 @@ ${marked.parse(editor.value)}
 doc.close();
 }
 
-async function exportPDF(){
+/* PRINT BASED PDF (same technique as DeepSchool) */
 
-const content = iframe.contentDocument.body;
+function exportPDF(){
 
-await html2pdf().set({
-margin:0,
-filename:(filename.value||"document")+".pdf",
-html2canvas:{
-scale:2,
-backgroundColor:"#ffffff"
-},
-jsPDF:{
-unit:"in",
-format:"letter",
-orientation:"portrait"
+const printWindow = window.open('', '_blank');
+
+printWindow.document.write(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>${filename.value || "document"}</title>
+
+<style>
+
+@page{
+size:letter;
+margin:0.75in;
 }
-}).from(content).save();
+
+body{
+font-family:system-ui;
+background:white;
+color:black;
+}
+
+h1,h2{
+border-bottom:1px solid black;
+padding-bottom:6px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid black;
+padding:6px;
+}
+
+pre{
+background:#f4f4f4;
+padding:10px;
+overflow:auto;
+}
+
+code{
+font-family:monospace;
+}
+
+</style>
+</head>
+
+<body>
+${marked.parse(editor.value)}
+</body>
+</html>
+`);
+
+printWindow.document.close();
+printWindow.focus();
+
+printWindow.onload = function(){
+printWindow.print();
+printWindow.close();
+};
 
 }
 
